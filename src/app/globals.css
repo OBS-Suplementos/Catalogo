@@ -1,0 +1,160 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    min-height: 100vh;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
+}
+
+@layer components {
+  /* Button base styles */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary text-primary-foreground hover:bg-primary/90 focus:ring-primary;
+  }
+
+  .btn-accent {
+    @apply btn bg-accent text-white hover:bg-accent-hover focus:ring-accent;
+  }
+
+  .btn-outline {
+    @apply btn border border-border bg-transparent hover:bg-muted focus:ring-border;
+  }
+
+  .btn-ghost {
+    @apply btn bg-transparent hover:bg-muted focus:ring-muted;
+  }
+
+  /* Input styles */
+  .input {
+    @apply w-full px-3 py-2 text-sm border border-border rounded-md bg-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all duration-200;
+  }
+
+  .input-error {
+    @apply input border-accent focus:ring-accent;
+  }
+
+  /* Card styles */
+  .card {
+    @apply bg-background border border-border rounded-lg shadow-sm overflow-hidden;
+  }
+
+  .card-hover {
+    @apply card transition-all duration-300 hover:shadow-md hover:border-muted-foreground/30;
+  }
+
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-medium rounded-full;
+  }
+
+  .badge-accent {
+    @apply badge bg-accent text-white;
+  }
+
+  .badge-success {
+    @apply badge bg-green-500 text-white;
+  }
+
+  /* Discount badge positioned */
+  .discount-badge {
+    @apply absolute top-2 right-2 badge-accent;
+  }
+
+  /* Sidebar styles */
+  .sidebar {
+    @apply fixed left-0 top-0 h-full w-64 bg-background border-r border-border z-40 transform transition-transform duration-300 ease-in-out;
+  }
+
+  .sidebar-hidden {
+    @apply -translate-x-full lg:translate-x-0;
+  }
+
+  /* Overlay for mobile sidebar */
+  .sidebar-overlay {
+    @apply fixed inset-0 bg-black/50 z-30 lg:hidden;
+  }
+}
+
+@layer utilities {
+  /* Text gradient */
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-accent to-red-400;
+  }
+
+  /* Container with max width */
+  .container-custom {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  /* Product grid */
+  .product-grid {
+    @apply grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-6;
+  }
+
+  /* Price styles */
+  .price-original {
+    @apply text-[11px] sm:text-sm text-muted-foreground line-through;
+  }
+
+  .price-current {
+    @apply text-base sm:text-lg font-bold text-foreground;
+  }
+
+  .price-discounted {
+    @apply text-base sm:text-lg font-bold text-accent;
+  }
+
+  /* Loading spinner */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-muted border-t-primary;
+  }
+}
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.animate-slide-up {
+  animation: slide-up 0.3s ease-out;
+}
+@import "./animations.css";

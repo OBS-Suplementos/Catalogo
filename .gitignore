@@ -1,0 +1,48 @@
+# Dependencies
+node_modules/
+
+# Next.js
+.next/
+out/
+
+# Supabase local
+.supabase/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.production.local
+.env.test.local
+
+# Vercel
+.vercel/
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# Coverage
+coverage
+.nyc_output
+
+# TypeScript
+*.tsbuildinfo
+
+# Caches
+.npm
+.eslintcache
+.stylelintcache
+
+# OS files
+.DS_Store
+
+# Yarn v2+
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
