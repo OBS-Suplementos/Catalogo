@@ -93,6 +93,8 @@ export default async function HomePage({ searchParams }: HomePageProps) {
 
   // Check if any filters are active
   const hasFilters = Object.keys(filters).length > 0;
+  const initialConvenioIndex =
+    convenios.length > 0 ? Math.floor(Math.random() * convenios.length) : 0;
 
   return (
     <div className="container-custom flex flex-col lg:flex-row gap-8">
@@ -109,7 +111,10 @@ export default async function HomePage({ searchParams }: HomePageProps) {
       <div className="flex-1">
         {convenios.length > 0 && (
           <div className="mb-6 pt-4">
-            <ConveniosCarousel convenios={convenios} />
+            <ConveniosCarousel
+              convenios={convenios}
+              initialIndex={initialConvenioIndex}
+            />
           </div>
         )}
 

@@ -37,6 +37,7 @@ export interface Convenio {
   banner_grande_url?: string | null;
   banner_chico_url?: string | null;
   banner_modo: ConvenioBannerMode;
+  orden?: number | null;
   created_at?: string;
   updated_at?: string;
 }

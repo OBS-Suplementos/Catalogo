@@ -7,6 +7,7 @@ import {
   deleteConvenio,
   getConvenios,
   updateConvenio,
+  updateConveniosOrder,
 } from '@/lib/convenios/actions';
 import { uploadConvenioImage } from '@/lib/storage/actions';
 import { Button, Card, CardContent, CardHeader, Input } from '@/components/ui';
@@ -19,6 +20,13 @@ interface ConveniosManagerProps {
 }
 
 type ConvenioImageKind = 'logo' | 'banner_grande' | 'banner_chico';
+
+function withSequentialOrder(convenios: Convenio[]) {
+  return convenios.map((convenio, index) => ({
+    ...convenio,
+    orden: index + 1,
+  }));
+}
 
 function normalizeExternalUrl(value: string) {
   const trimmed = value.trim();
@@ -52,8 +60,11 @@ export default function ConveniosManager({
   const logoInputRef = useRef<HTMLInputElement>(null);
   const desktopBannerInputRef = useRef<HTMLInputElement>(null);
   const mobileBannerInputRef = useRef<HTMLInputElement>(null);
+  const formSectionRef = useRef<HTMLDivElement>(null);
 
-  const [convenios, setConvenios] = useState(initialConvenios);
+  const [convenios, setConvenios] = useState(() =>
+    withSequentialOrder(initialConvenios)
+  );
   const [editingConvenio, setEditingConvenio] = useState<Convenio | null>(null);
   const [nombre, setNombre] = useState('');
   const [descuento, setDescuento] = useState('0');
@@ -69,6 +80,7 @@ export default function ConveniosManager({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [isSavingOrder, setIsSavingOrder] = useState(false);
   const [uploadProgress, setUploadProgress] = useState('');
 
   const logoPreviewUrl = useObjectUrl(logoFile);
@@ -101,6 +113,15 @@ export default function ConveniosManager({
     ]
   );
 
+  const scrollToForm = () => {
+    window.requestAnimationFrame(() => {
+      formSectionRef.current?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    });
+  };
+
   const resetForm = () => {
     setEditingConvenio(null);
     setNombre('');
@@ -123,7 +144,7 @@ export default function ConveniosManager({
 
   const refreshConvenios = async () => {
     const { data } = await getConvenios();
-    setConvenios(data);
+    setConvenios(withSequentialOrder(data));
   };
 
   const startEditing = (convenio: Convenio) => {
@@ -143,6 +164,8 @@ export default function ConveniosManager({
     if (logoInputRef.current) logoInputRef.current.value = '';
     if (desktopBannerInputRef.current) desktopBannerInputRef.current.value = '';
     if (mobileBannerInputRef.current) mobileBannerInputRef.current.value = '';
+
+    scrollToForm();
   };
 
   const validate = () => {
@@ -295,6 +318,63 @@ export default function ConveniosManager({
     }
   };
 
+  const moveConvenioToPosition = (id: number, nextPosition: number) => {
+    const currentIndex = convenios.findIndex((convenio) => convenio.id === id);
+
+    if (currentIndex === -1) {
+      return;
+    }
+
+    const nextIndex = Math.max(
+      0,
+      Math.min(nextPosition - 1, convenios.length - 1)
+    );
+
+    if (nextIndex === currentIndex) {
+      return;
+    }
+
+    const nextConvenios = [...convenios];
+    const [selectedConvenio] = nextConvenios.splice(currentIndex, 1);
+    nextConvenios.splice(nextIndex, 0, selectedConvenio);
+    setConvenios(withSequentialOrder(nextConvenios));
+  };
+
+  const sortConveniosByDiscount = (direction: 'asc' | 'desc') => {
+    const nextConvenios = [...convenios].sort((firstConvenio, secondConvenio) => {
+      const discountDifference =
+        direction === 'desc'
+          ? secondConvenio.descuento - firstConvenio.descuento
+          : firstConvenio.descuento - secondConvenio.descuento;
+
+      if (discountDifference !== 0) {
+        return discountDifference;
+      }
+
+      return firstConvenio.nombre.localeCompare(secondConvenio.nombre);
+    });
+
+    setConvenios(withSequentialOrder(nextConvenios));
+  };
+
+  const handleSaveOrder = async () => {
+    setIsSavingOrder(true);
+
+    const result = await updateConveniosOrder(
+      convenios.map((convenio) => convenio.id)
+    );
+
+    setIsSavingOrder(false);
+
+    if (!result.success) {
+      addToast(result.error || 'Error al guardar el orden', 'error');
+      return;
+    }
+
+    addToast('Orden guardado correctamente', 'success');
+    await refreshConvenios();
+  };
+
   const imageInputClass = 'hidden';
   const imageAccept = 'image/webp,image/avif,image/png,image/jpeg';
 
@@ -307,15 +387,16 @@ export default function ConveniosManager({
         </p>
       </div>
 
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold">
-            {editingConvenio ? 'Editar convenio' : 'Nuevo convenio'}
-          </h2>
-        </CardHeader>
+      <div ref={formSectionRef} className="scroll-mt-20">
+        <Card>
+          <CardHeader>
+            <h2 className="text-lg font-semibold">
+              {editingConvenio ? 'Editar convenio' : 'Nuevo convenio'}
+            </h2>
+          </CardHeader>
 
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-6">
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-6">
             <div className="grid gap-4 lg:grid-cols-2">
               <Input
                 label="Nombre *"
@@ -574,8 +655,119 @@ export default function ConveniosManager({
               {uploadProgress ||
                 (editingConvenio ? 'Guardar cambios' : 'Crear convenio')}
             </Button>
+            </div>
+          </form>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold">Orden en /convenios</h2>
+              <p className="text-sm text-muted-foreground">
+                Elegi el orden manualmente o acomoda por porcentaje.
+              </p>
+            </div>
+            <span className="text-sm text-muted-foreground">
+              {convenios.length} total
+            </span>
           </div>
-        </form>
+        </CardHeader>
+        <CardContent>
+          {convenios.length <= 1 ? (
+            <p className="py-6 text-center text-muted-foreground">
+              Agrega mas convenios para ordenar la lista.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => sortConveniosByDiscount('desc')}
+                    disabled={isSavingOrder}
+                  >
+                    % mayor a menor
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => sortConveniosByDiscount('asc')}
+                    disabled={isSavingOrder}
+                  >
+                    % menor a mayor
+                  </Button>
+                </div>
+                <Button
+                  type="button"
+                  variant="accent"
+                  size="sm"
+                  onClick={handleSaveOrder}
+                  isLoading={isSavingOrder}
+                >
+                  Guardar orden
+                </Button>
+              </div>
+
+              <div className="space-y-2">
+                {convenios.map((convenio, index) => (
+                  <div
+                    key={convenio.id}
+                    className="flex flex-col gap-3 rounded-md border border-border p-3 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="flex min-w-0 items-center gap-3">
+                      <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-muted">
+                        <Image
+                          src={
+                            convenio.logo_url || '/images/placeholder_imagen.svg'
+                          }
+                          alt={`Logo de ${convenio.nombre}`}
+                          fill
+                          className="object-contain"
+                          sizes="40px"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate font-medium">{convenio.nombre}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {convenio.descuento}% de descuento
+                        </p>
+                      </div>
+                    </div>
+
+                    <label className="flex items-center gap-2 text-sm">
+                      <span className="text-muted-foreground">Orden</span>
+                      <select
+                        value={index + 1}
+                        onChange={(event) =>
+                          moveConvenioToPosition(
+                            convenio.id,
+                            Number(event.target.value)
+                          )
+                        }
+                        disabled={isSavingOrder}
+                        className="h-9 rounded-md border border-border bg-background px-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      >
+                        {convenios.map((optionConvenio, optionIndex) => (
+                          <option
+                            key={optionConvenio.id}
+                            value={optionIndex + 1}
+                          >
+                            {optionIndex + 1}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
       </Card>
 
       <Card>

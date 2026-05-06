@@ -11,9 +11,36 @@ create table if not exists public.convenios (
   banner_grande_url text,
   banner_chico_url text,
   banner_modo text not null default 'placeholder' check (banner_modo in ('placeholder', 'imagen')),
+  orden integer not null default 1,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.convenios
+add column if not exists orden integer;
+
+with ordered_convenios as (
+  select
+    id,
+    row_number() over (
+      order by coalesce(orden, 2147483647), created_at desc, id desc
+    )::integer as next_orden
+  from public.convenios
+)
+update public.convenios
+set orden = ordered_convenios.next_orden
+from ordered_convenios
+where public.convenios.id = ordered_convenios.id
+  and public.convenios.orden is distinct from ordered_convenios.next_orden;
+
+alter table public.convenios
+alter column orden set default 1;
+
+alter table public.convenios
+alter column orden set not null;
+
+create index if not exists convenios_orden_idx
+on public.convenios (orden asc);
 
 alter table public.convenios enable row level security;
 

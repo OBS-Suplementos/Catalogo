@@ -73,6 +73,21 @@ function toDatabasePayload(payload: ConvenioPayload) {
   };
 }
 
+function normalizeConveniosOrder(convenios: Convenio[]) {
+  return convenios.map((convenio, index) => ({
+    ...convenio,
+    orden: convenio.orden ?? index + 1,
+  }));
+}
+
+function isMissingOrderColumnError(error: { code?: string; message?: string }) {
+  return (
+    error.code === '42703' ||
+    error.code === 'PGRST204' ||
+    Boolean(error.message?.toLowerCase().includes('orden'))
+  );
+}
+
 async function deleteReplacedImages(
   previous: Pick<
     Convenio,
@@ -105,6 +120,7 @@ export async function getConvenios(): Promise<{
   const { data, error } = await supabase
     .from('convenios')
     .select('*')
+    .order('orden', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -115,11 +131,22 @@ export async function getConvenios(): Promise<{
       };
     }
 
+    if (isMissingOrderColumnError(error)) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from('convenios')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!fallbackError) {
+        return { data: normalizeConveniosOrder(fallbackData as Convenio[]) };
+      }
+    }
+
     console.error('Error fetching convenios:', error);
     return { data: [], error: 'Error al cargar convenios' };
   }
 
-  return { data: data as Convenio[] };
+  return { data: normalizeConveniosOrder(data as Convenio[]) };
 }
 
 export async function createConvenio(payload: ConvenioPayload): Promise<{
@@ -133,9 +160,39 @@ export async function createConvenio(payload: ConvenioPayload): Promise<{
 
   const supabase = createServerSupabaseAdminClient();
 
+  const { data: lastConvenio, error: orderError } = await supabase
+    .from('convenios')
+    .select('orden')
+    .order('orden', { ascending: false, nullsFirst: false })
+    .limit(1)
+    .maybeSingle();
+
+  const hasOrderColumn = !orderError;
+
+  if (orderError) {
+    if (!isMissingOrderColumnError(orderError)) {
+      console.error('Error getting convenio order:', orderError);
+      return {
+        data: null,
+        error: 'Error al calcular el orden del convenio',
+      };
+    }
+  }
+
+  const nextOrder =
+    typeof lastConvenio?.orden === 'number' ? lastConvenio.orden + 1 : 1;
+  const databasePayload = toDatabasePayload(payload);
+
   const { data, error } = await supabase
     .from('convenios')
-    .insert(toDatabasePayload(payload))
+    .insert(
+      hasOrderColumn
+        ? {
+            ...databasePayload,
+            orden: nextOrder,
+          }
+        : databasePayload
+    )
     .select()
     .single();
 
@@ -149,6 +206,56 @@ export async function createConvenio(payload: ConvenioPayload): Promise<{
   revalidatePath('/admin/convenios');
 
   return { data: data as Convenio };
+}
+
+export async function updateConveniosOrder(
+  orderedIds: number[]
+): Promise<{ success: boolean; error?: string }> {
+  const uniqueIds = new Set(orderedIds);
+
+  if (
+    orderedIds.length === 0 ||
+    uniqueIds.size !== orderedIds.length ||
+    orderedIds.some((id) => !Number.isInteger(id) || id <= 0)
+  ) {
+    return { success: false, error: 'El orden seleccionado no es valido' };
+  }
+
+  const supabase = createServerSupabaseAdminClient();
+  const updatedAt = new Date().toISOString();
+
+  const updates = await Promise.all(
+    orderedIds.map((id, index) =>
+      supabase
+        .from('convenios')
+        .update({
+          orden: index + 1,
+          updated_at: updatedAt,
+        })
+        .eq('id', id)
+    )
+  );
+
+  const failedUpdate = updates.find((result) => result.error);
+
+  if (failedUpdate?.error) {
+    if (isMissingOrderColumnError(failedUpdate.error)) {
+      return {
+        success: false,
+        error:
+          'Falta ejecutar supabase/convenios_setup.sql en Supabase para poder guardar el orden',
+      };
+    }
+
+    console.error('Error updating convenio order:', failedUpdate.error);
+    return { success: false, error: 'Error al guardar el orden' };
+  }
+
+  revalidatePath('/');
+  revalidatePath('/convenios');
+  revalidatePath('/admin/convenios');
+
+  return { success: true };
 }
 
 export async function updateConvenio(
