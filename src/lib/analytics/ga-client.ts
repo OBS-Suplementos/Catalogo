@@ -1,4 +1,5 @@
 import { BetaAnalyticsDataClient, protos } from '@google-analytics/data';
+import * as gaxFallback from 'google-gax/fallback';
 
 type RunReportRequest =
   protos.google.analytics.data.v1beta.IRunReportRequest;
@@ -81,13 +82,17 @@ function getAnalyticsClient() {
 
   const credentials = JSON.parse(credentialsJson);
 
-  return new BetaAnalyticsDataClient({
-    credentials: {
-      client_email: credentials.client_email,
-      private_key: credentials.private_key?.replace(/\\n/g, '\n'),
+  return new BetaAnalyticsDataClient(
+    {
+      credentials: {
+        client_email: credentials.client_email,
+        private_key: credentials.private_key?.replace(/\\n/g, '\n'),
+      },
+      fallback: true,
+      projectId: credentials.project_id,
     },
-    projectId: credentials.project_id,
-  });
+    gaxFallback,
+  );
 }
 
 function getPropertyName() {
@@ -179,6 +184,29 @@ async function runReport(
   return report;
 }
 
+function getGaErrorMessage(error: unknown): string {
+  const maybeError = error as {
+    code?: unknown;
+    details?: unknown;
+    message?: unknown;
+  };
+  const details =
+    typeof maybeError?.details === 'string' ? maybeError.details.trim() : '';
+  const message =
+    typeof maybeError?.message === 'string' ? maybeError.message.trim() : '';
+  const code =
+    typeof maybeError?.code === 'number' || typeof maybeError?.code === 'string'
+      ? `GA4 ${maybeError.code}: `
+      : '';
+  const usefulMessage = details || message;
+
+  if (!usefulMessage || usefulMessage === 'undefined undefined: undefined') {
+    return 'GA4 no devolvio un detalle util del error. Revisa credenciales, acceso a la propiedad y Analytics Data API.';
+  }
+
+  return `${code}${usefulMessage}`;
+}
+
 async function runOptionalReport(
   client: BetaAnalyticsDataClient,
   label: string,
@@ -187,7 +215,9 @@ async function runOptionalReport(
   try {
     return await runReport(client, request);
   } catch (error) {
-    console.warn(`Optional GA4 report failed (${label}):`, error);
+    console.warn(
+      `Optional GA4 report failed (${label}): ${getGaErrorMessage(error)}`,
+    );
     return { rows: [] };
   }
 }
@@ -301,13 +331,13 @@ async function fetchAnalyticsData(): Promise<AnalyticsData> {
         { name: 'itemBrand' },
         { name: 'itemCategory' },
       ],
-      metrics: [{ name: 'itemViewEvents' }, { name: 'itemsClickedInList' }],
+      metrics: [{ name: 'itemsViewed' }, { name: 'itemsClickedInList' }],
       dimensionFilter: notExactDimension('itemName', '(not set)'),
       orderBys: [
-        { metric: { metricName: 'itemViewEvents' }, desc: true },
+        { metric: { metricName: 'itemsViewed' }, desc: true },
         { metric: { metricName: 'itemsClickedInList' }, desc: true },
       ],
-      limit: 10,
+      limit: 25,
     }),
     runOptionalReport(client, 'top searches', {
       dateRanges: [thirtyDayRange],
@@ -380,22 +410,60 @@ async function fetchAnalyticsData(): Promise<AnalyticsData> {
     views: getMetric(row, 0),
   }));
 
-  const productPerformance = getRows(productPerformanceReport)
-    .map((row) => {
-      const views = getMetric(row, 0);
-      const clicks = getMetric(row, 1);
+  const productPerformanceMap = new Map<
+    string,
+    AnalyticsData['productPerformance'][number]
+  >();
 
-      return {
-        id: getDimension(row, 0, 'unknown'),
-        name: getDimension(row, 1, 'Producto sin nombre'),
-        brand: getDimension(row, 2, 'Sin marca'),
-        category: getDimension(row, 3, 'Sin tipo'),
-        views,
-        clicks,
-        ctr: views > 0 ? clicks / views : 0,
-      };
-    })
-    .filter((product) => product.views > 0 || product.clicks > 0);
+  getRows(productPerformanceReport).forEach((row) => {
+    const views = getMetric(row, 0);
+    const clicks = getMetric(row, 1);
+
+    if (views <= 0 && clicks <= 0) return;
+
+    const id = getDimension(row, 0, 'unknown');
+    const name = getDimension(row, 1, 'Producto sin nombre');
+    const brand = getDimension(row, 2, 'Sin marca');
+    const category = getDimension(row, 3, 'Sin tipo');
+    const key = `${id}-${name}`;
+    const existingProduct = productPerformanceMap.get(key);
+
+    if (existingProduct) {
+      existingProduct.views += views;
+      existingProduct.clicks += clicks;
+
+      if (existingProduct.brand === 'Sin marca' && brand !== 'Sin marca') {
+        existingProduct.brand = brand;
+      }
+
+      if (
+        existingProduct.category === 'Sin tipo' &&
+        category !== 'Sin tipo'
+      ) {
+        existingProduct.category = category;
+      }
+
+      existingProduct.ctr =
+        existingProduct.views > 0
+          ? existingProduct.clicks / existingProduct.views
+          : 0;
+      return;
+    }
+
+    productPerformanceMap.set(key, {
+      id,
+      name,
+      brand,
+      category,
+      views,
+      clicks,
+      ctr: views > 0 ? clicks / views : 0,
+    });
+  });
+
+  const productPerformance = Array.from(productPerformanceMap.values())
+    .sort((a, b) => b.views - a.views || b.clicks - a.clicks)
+    .slice(0, 10);
 
   const topSearches = getRows(topSearchesReport)
     .map((row) => ({

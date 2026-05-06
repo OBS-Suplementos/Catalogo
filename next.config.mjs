@@ -9,6 +9,11 @@ const nextConfig = {
       },
     ],
   },
+  serverExternalPackages: [
+    '@google-analytics/data',
+    'google-gax',
+    '@grpc/grpc-js',
+  ],
 };
 
 export default nextConfig;

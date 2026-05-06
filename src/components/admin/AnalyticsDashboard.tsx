@@ -94,7 +94,7 @@ function formatNumber(value: number): string {
 }
 
 function formatPercent(value: number): string {
-  const percent = value <= 1 ? value * 100 : value;
+  const percent = Number.isFinite(value) ? value * 100 : 0;
   return `${percent.toFixed(1)}%`;
 }
 
@@ -407,7 +407,7 @@ export default function AnalyticsDashboard({
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="lg:col-span-2">
+        <Card className="order-3">
           <CardHeader>
             <h2 className="text-lg font-semibold">
               Productos con más interés
@@ -416,8 +416,19 @@ export default function AnalyticsDashboard({
           <CardContent>
             {data.productPerformance.length > 0 ? (
               <div className="space-y-4">
-                {data.productPerformance.map((product) => (
-                  <div key={`${product.id}-${product.name}`} className="space-y-2">
+                <div className="grid grid-cols-[minmax(0,1fr)_156px] items-center gap-4 text-xs text-muted-foreground">
+                  <span />
+                  <div className="grid grid-cols-3 gap-3 text-right">
+                    <span>Vistas</span>
+                    <span>Clics</span>
+                    <span>CTR</span>
+                  </div>
+                </div>
+                {data.productPerformance.map((product, index) => (
+                  <div
+                    key={`${product.id}-${product.name}-${product.brand}-${product.category}-${index}`}
+                    className="space-y-2"
+                  >
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0">
                         <p className="truncate font-medium">{product.name}</p>
@@ -445,11 +456,6 @@ export default function AnalyticsDashboard({
                     </div>
                   </div>
                 ))}
-                <div className="ml-auto grid w-[156px] grid-cols-3 gap-3 text-right text-xs text-muted-foreground">
-                  <span>Vistas</span>
-                  <span>Clics</span>
-                  <span>CTR</span>
-                </div>
               </div>
             ) : (
               <EmptyState>
@@ -460,7 +466,7 @@ export default function AnalyticsDashboard({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="order-1">
           <CardHeader>
             <h2 className="text-lg font-semibold">Sesiones por día</h2>
           </CardHeader>
@@ -497,7 +503,7 @@ export default function AnalyticsDashboard({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="order-4">
           <CardHeader>
             <h2 className="text-lg font-semibold">Búsquedas</h2>
           </CardHeader>
@@ -522,7 +528,7 @@ export default function AnalyticsDashboard({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="order-5">
           <CardHeader>
             <h2 className="text-lg font-semibold">Fuentes de tráfico</h2>
           </CardHeader>
@@ -552,7 +558,7 @@ export default function AnalyticsDashboard({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="order-2">
           <CardHeader>
             <h2 className="text-lg font-semibold">Dispositivos</h2>
           </CardHeader>
@@ -584,7 +590,7 @@ export default function AnalyticsDashboard({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="order-6">
           <CardHeader>
             <h2 className="text-lg font-semibold">Páginas vistas</h2>
           </CardHeader>
@@ -614,7 +620,7 @@ export default function AnalyticsDashboard({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="order-7">
           <CardHeader>
             <h2 className="text-lg font-semibold">Ubicación</h2>
           </CardHeader>
@@ -668,7 +674,7 @@ export default function AnalyticsDashboard({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="order-8">
           <CardHeader>
             <h2 className="text-lg font-semibold">Audiencia</h2>
           </CardHeader>
