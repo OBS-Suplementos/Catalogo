@@ -1,8 +1,18 @@
+import type { Metadata } from 'next';
 import Image from 'next/image';
 import ConvenioBanner from '@/components/ConvenioBanner';
 import { getConvenios } from '@/lib/convenios/actions';
 
 export const dynamic = 'force-dynamic';
+
+export const metadata: Metadata = {
+  title: 'Convenios activos',
+  description:
+    'Convenios y descuentos vigentes en OBS Suplementos para acceder a beneficios en suplementos deportivos.',
+  alternates: {
+    canonical: '/convenios',
+  },
+};
 
 export default async function ConveniosPage() {
   const { data: convenios, error } = await getConvenios();

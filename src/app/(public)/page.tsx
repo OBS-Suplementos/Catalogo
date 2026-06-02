@@ -121,7 +121,9 @@ export default async function HomePage({ searchParams }: HomePageProps) {
         {/* Results header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold">
-            {hasFilters ? "Resultados de búsqueda" : "Todos los productos"}
+            {hasFilters
+              ? "Resultados de búsqueda"
+              : "Catálogo de suplementos deportivos"}
           </h1>
           <span className="text-muted-foreground">
             {products.length} producto{products.length !== 1 ? "s" : ""}

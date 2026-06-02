@@ -269,6 +269,7 @@ async function fetchAnalyticsData(): Promise<AnalyticsData> {
     locationsReport,
     devicesReport,
     trafficReport,
+    qrTrafficReport,
   ] = await Promise.all([
     runReport(client, {
       dateRanges: [thirtyDayRange],
@@ -389,6 +390,12 @@ async function fetchAnalyticsData(): Promise<AnalyticsData> {
       metrics: [{ name: 'sessions' }],
       orderBys: [{ metric: { metricName: 'sessions' }, desc: true }],
       limit: 10,
+    }),
+    runOptionalReport(client, 'qr traffic', {
+      dateRanges: [thirtyDayRange],
+      dimensions: [{ name: 'sessionSource' }, { name: 'sessionMedium' }],
+      metrics: [{ name: 'sessions' }],
+      dimensionFilter: exactDimension('sessionSource', 'qr'),
     }),
   ]);
 
@@ -523,12 +530,43 @@ async function fetchAnalyticsData(): Promise<AnalyticsData> {
     percentage: deviceTotal > 0 ? device.count / deviceTotal : 0,
   }));
 
-  const trafficSources = getRows(trafficReport).map((row) => ({
-    channel: getDimension(row, 0, 'Unassigned'),
-    source: getDimension(row, 1, '(direct)'),
-    medium: getDimension(row, 2, '(none)'),
-    count: getMetric(row, 0),
-  }));
+  // El QR usa solo `?utm_source=qr`, por lo que GA4 lo reporta con
+  // sessionSource = "qr" (sin medium). Detectamos esas filas para mostrarlas
+  // con el canal "QR" dentro de "Fuentes de trafico".
+  const QR_CHANNEL_LABEL = 'QR';
+  const isQrTraffic = (source: string, medium: string) =>
+    source.toLowerCase() === 'qr' ||
+    `${source} / ${medium}`.toLowerCase().includes('qr');
+
+  const trafficSources = getRows(trafficReport).map((row) => {
+    const channel = getDimension(row, 0, 'Unassigned');
+    const source = getDimension(row, 1, '(direct)');
+    const medium = getDimension(row, 2, '(none)');
+
+    return {
+      channel: isQrTraffic(source, medium) ? QR_CHANNEL_LABEL : channel,
+      source,
+      medium,
+      count: getMetric(row, 0),
+    };
+  });
+
+  // Si las sesiones QR quedaron fuera del top 10 del reporte general, las
+  // agregamos explicitamente con el reporte dedicado filtrado por sessionSource.
+  const qrRows = getRows(qrTrafficReport);
+  const qrSessions = qrRows.reduce((sum, row) => sum + getMetric(row, 0), 0);
+  const hasQrRow = trafficSources.some(
+    (item) => item.channel === QR_CHANNEL_LABEL,
+  );
+
+  if (qrSessions > 0 && !hasQrRow) {
+    trafficSources.push({
+      channel: QR_CHANNEL_LABEL,
+      source: 'qr',
+      medium: getDimension(qrRows[0], 1, '(none)'),
+      count: qrSessions,
+    });
+  }
 
   const summary = {
     sessionsToday: getMetric(todayRow, 0),

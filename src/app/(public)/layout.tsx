@@ -5,6 +5,30 @@ import { getBrands, getProductTypes } from "@/lib/products/actions";
 
 export const revalidate = 60;
 
+const SITE_URL = 'https://obssuplementos.vercel.app';
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#organization`,
+      name: 'OBS Suplementos',
+      url: SITE_URL,
+      logo: `${SITE_URL}/images/logo.webp`,
+      sameAs: ['https://www.instagram.com/obs.suplementos/'],
+    },
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      name: 'OBS Suplementos',
+      url: SITE_URL,
+      publisher: { '@id': `${SITE_URL}/#organization` },
+      inLanguage: 'es',
+    },
+  ],
+};
+
 export default async function PublicLayout({
   children,
 }: {
@@ -17,6 +41,10 @@ export default async function PublicLayout({
 
   return (
     <div className="min-h-screen flex flex-col">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
+      />
       <Suspense fallback={<div className="h-16 border-b border-border" />}>
         <PublicHeader brands={brands || []} types={types || []} />
       </Suspense>
@@ -37,6 +65,29 @@ export default async function PublicLayout({
                 />
               </div>
               <span className="font-semibold">Suplementos</span>
+              <a
+                href="https://www.instagram.com/obs.suplementos/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Instagram de OBS Suplementos"
+                title="Instagram de OBS Suplementos"
+                className="inline-flex items-center text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <svg
+                  className="h-5 w-5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                  <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                </svg>
+              </a>
             </div>
             <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} OBS Suplementos. Todos los derechos
