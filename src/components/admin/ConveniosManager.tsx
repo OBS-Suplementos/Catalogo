@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import Image from 'next/image';
 import {
   createConvenio,
   deleteConvenio,
@@ -12,6 +11,7 @@ import {
 import { uploadConvenioImage } from '@/lib/storage/actions';
 import { Button, Card, CardContent, CardHeader, Input } from '@/components/ui';
 import { useToast } from '@/components/ui/Toast';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import ConvenioBanner from '@/components/ConvenioBanner';
 import { Convenio, ConvenioBannerMode, ConvenioPayload } from '@/types';
 
@@ -439,7 +439,7 @@ export default function ConveniosManager({
 
                 <div className="mb-4 flex items-center gap-3">
                   <div className="relative h-16 w-16 overflow-hidden rounded-md bg-muted">
-                    <Image
+                    <ImageWithFallback
                       src={logoPreviewUrl || logoUrl || '/images/placeholder_imagen.svg'}
                       alt="Preview logo"
                       fill
@@ -721,7 +721,7 @@ export default function ConveniosManager({
                   >
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                        <Image
+                        <ImageWithFallback
                           src={
                             convenio.logo_url || '/images/placeholder_imagen.svg'
                           }
@@ -795,7 +795,7 @@ export default function ConveniosManager({
                   <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex min-w-0 items-center gap-3">
                       <div className="relative h-10 w-10 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                        <Image
+                        <ImageWithFallback
                           src={
                             convenio.logo_url || '/images/placeholder_imagen.svg'
                           }

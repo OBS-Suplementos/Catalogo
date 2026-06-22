@@ -1,5 +1,5 @@
-import Image from 'next/image';
 import { Convenio } from '@/types';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 
 interface ConvenioBannerProps {
   convenio: Convenio;
@@ -28,7 +28,7 @@ function PlaceholderBanner({
           compact ? 'h-10 w-10' : 'h-12 w-12 sm:h-16 sm:w-16'
         }`}
       >
-        <Image
+        <ImageWithFallback
           src={logoSrc}
           alt={`Logo de ${convenio.nombre}`}
           fill
@@ -73,7 +73,7 @@ function BannerImage({
   sizes: string;
 }) {
   return (
-    <Image
+    <ImageWithFallback
       src={src}
       alt={alt}
       fill

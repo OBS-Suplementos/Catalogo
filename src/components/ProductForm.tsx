@@ -10,6 +10,7 @@ import { getProductTypes } from '@/lib/product-types/actions';
 import { uploadMultipleImages, deleteImage } from '@/lib/storage/actions';
 import { Button, Input, Textarea } from '@/components/ui';
 import Card, { CardContent, CardHeader, CardFooter } from '@/components/ui/Card';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 
 interface ProductFormProps {
   product?: Product;
@@ -316,7 +317,7 @@ export default function ProductForm({
                     key={url}
                     className="relative aspect-square rounded-lg overflow-hidden bg-muted group"
                   >
-                    <Image
+                    <ImageWithFallback
                       src={url}
                       alt={`Imagen ${index + 1}`}
                       fill

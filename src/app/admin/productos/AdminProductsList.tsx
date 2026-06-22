@@ -1,10 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import { Brand, Product, ProductType } from '@/types';
 import { Button, Card, CardContent, CardHeader, Input } from '@/components/ui';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import DeleteProductButton from './DeleteProductButton';
 
 interface AdminProductsListProps {
@@ -131,7 +131,7 @@ export default function AdminProductsList({
                         <div className="flex items-center gap-3">
                           <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-muted">
                             {product.imagenes && product.imagenes.length > 0 ? (
-                              <Image
+                              <ImageWithFallback
                                 src={product.imagenes[0]}
                                 alt={product.nombre}
                                 fill
@@ -140,7 +140,7 @@ export default function AdminProductsList({
                               />
                             ) : (
                               <div className="relative h-full w-full bg-muted">
-                                <Image
+                                <ImageWithFallback
                                   src="/images/placeholder_imagen.svg"
                                   alt="Imagen no disponible"
                                   fill

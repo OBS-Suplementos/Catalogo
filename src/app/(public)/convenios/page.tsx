@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
-import Image from 'next/image';
 import ConvenioBanner from '@/components/ConvenioBanner';
+import ImageWithFallback from '@/components/ui/ImageWithFallback';
 import { getConvenios } from '@/lib/convenios/actions';
 
 export const dynamic = 'force-dynamic';
@@ -48,7 +48,7 @@ export default async function ConveniosPage() {
 
               <div className="flex items-center gap-3 border-t border-border p-4">
                 <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                  <Image
+                  <ImageWithFallback
                     src={convenio.logo_url || '/images/placeholder_imagen.svg'}
                     alt={`Logo de ${convenio.nombre}`}
                     fill

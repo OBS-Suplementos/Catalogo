@@ -1,9 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
 import { Convenio, Product } from "@/types";
 import { Button } from "@/components/ui";
+import ImageWithFallback from "@/components/ui/ImageWithFallback";
 import {
   trackProductView,
   trackWhatsappLead,
@@ -96,7 +96,7 @@ export default function ProductModal({
         <div className="w-full md:w-1/2 bg-muted p-4 md:p-6 flex flex-col items-center justify-center relative">
           <div className="relative w-full aspect-[4/3] md:aspect-square max-w-[400px]">
             {activeImage && (
-              <Image
+              <ImageWithFallback
                 src={activeImage}
                 alt={product.nombre}
                 fill
@@ -126,7 +126,7 @@ export default function ProductModal({
                       : "border-transparent opacity-70 hover:opacity-100"
                   }`}
                 >
-                  <Image
+                  <ImageWithFallback
                     src={img}
                     alt={`Vista ${idx + 1}`}
                     fill
@@ -198,7 +198,7 @@ export default function ProductModal({
                 {selectedConvenio ? (
                   <span className="flex min-w-0 items-center gap-2">
                     <span className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                      <Image
+                      <ImageWithFallback
                         src={
                           selectedConvenio.logo_url ||
                           "/images/placeholder_imagen.svg"
@@ -269,7 +269,7 @@ export default function ProductModal({
                       }`}
                     >
                       <span className="relative h-8 w-8 flex-shrink-0 overflow-hidden rounded-md bg-muted">
-                        <Image
+                        <ImageWithFallback
                           src={convenio.logo_url || "/images/placeholder_imagen.svg"}
                           alt={`Logo de ${convenio.nombre}`}
                           fill

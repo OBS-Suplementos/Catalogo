@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { Product } from "@/types";
 import Card, { CardContent } from "@/components/ui/Card";
+import ImageWithFallback from "@/components/ui/ImageWithFallback";
 import { trackProductClick } from "@/components/GoogleAnalytics";
 
 interface ProductCardProps {
@@ -38,7 +39,7 @@ export default function ProductCard({
       {/* Image container */}
       <div className="relative aspect-[4/3] overflow-hidden bg-muted sm:aspect-square">
         {product.imagenes && product.imagenes.length > 0 ? (
-          <Image
+          <ImageWithFallback
             src={product.imagenes[0]}
             alt={product.nombre}
             fill
